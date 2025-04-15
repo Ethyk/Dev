@@ -17,19 +17,16 @@
 		validators: zodClient(formSchema),
 		onSubmit: () => {
 			isFormLoading = true;
-			console.log("ssssss", data.form.isRegister);
 		},
 		onUpdate: ({ result }) => {
 			isFormLoading = false;
 			if (result.status === 200) {
-				toast.success('Success', {
-					description: $formData.isRegister 
-						? 'Account created successfully' 
-						: 'Logged in successfully'
+				toast.success('Check your email', {
+					description: 'We have sent you a login link. Be sure to check your spam too.'
 				});
 			} else {
 				toast.error('Something went wrong', {
-					description: result.message?.error || 'Authentication failed'
+					description: 'Your sign in request failed. Please try again.'
 				});
 			}
 		},
@@ -44,15 +41,11 @@
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 		loading = false;
 	};
-
-	const toggleAuthMode = () => {
-		$formData.isRegister = !$formData.isRegister;
-	};
 </script>
 
 <svelte:head>
-	<title>{$formData.isRegister ? 'Sign Up' : 'Sign In'} | Svee UI</title>
-	<meta name="description" content="Authentication for Svee UI" />
+	<title>Sign Up | Svee UI</title>
+	<meta name="description" content="Sign Up for Svee UI" />
 </svelte:head>
 
 <div class="container flex h-screen w-screen flex-col items-center justify-center">
@@ -62,98 +55,48 @@
 	</Button>
 	<div class="mx-auto flex w-full flex-col justify-center gap-6 sm:w-[350px]">
 		<div class="flex flex-col gap-2 text-center">
-			<h1 class="text-2xl font-semibold tracking-tight">
-				{$formData.isRegister ? 'Create Account' : 'Welcome Back'}
-			</h1>
-			<p class="text-sm text-muted-foreground">
-				{$formData.isRegister 
-					? 'Register with email and password' 
-					: 'Sign in to your account'}
-			</p>
+			<!-- {/* <Icons.logo class="mx-auto h-6 w-6" /> */} -->
+			<h1 class="text-2xl font-semibold tracking-tight">Welcome to Svee UI</h1>
+			<p class="text-sm text-muted-foreground">Sign up for an account</p>
 		</div>
-
-		<!-- Toggle Auth Mode -->
-		<div class="flex items-center justify-center gap-2">
-			<button
-				type="button"
-				on:click={toggleAuthMode}
-				class="text-sm text-muted-foreground hover:text-foreground transition-colors"
-			>
-				{$formData.isRegister 
-					? 'Already have an account? Sign In' 
-					: 'Need an account? Sign Up'}
-			</button>
-		</div>
-
 		<!-- Form -->
-		<form method="POST" use:enhance class="space-y-4">
-			<input type="hidden" name="isRegister" bind:value={$formData.isRegister} />
-
-			{#if $formData.isRegister}
-				<Form.Field {form} name="name" class="mb-4">
-					<!-- <Form.Label>Name</Form.Label> -->
-					<Form.Control let:attrs>
-						<Input 
-							placeholder="Your name" 
-							{...attrs} 
-							bind:value={$formData.name} 
-						/>
-					</Form.Control>
-					<Form.FieldErrors />
-				</Form.Field>
-			{/if}
-
+		<form method="POST" use:enhance>
 			<Form.Field {form} name="email" class="mb-4">
-				<!-- <Form.Label>Email</Form.Label> -->
 				<Form.Control let:attrs>
-					<Input 
-						type="email" 
-						placeholder="name@example.com" 
-						{...attrs} 
-						bind:value={$formData.email} 
-					/>
+					<Input placeholder="name@example.com" {...attrs} bind:value={$formData.email} />
 				</Form.Control>
+				<!-- <Form.Description>This is your email address.</Form.Description> -->
 				<Form.FieldErrors />
 			</Form.Field>
-
-			<Form.Field {form} name="password" class="mb-4">
-				<!-- <Form.Label>Password</Form.Label> -->
-				<Form.Control let:attrs>
-					<Input 
-						type="password" 
-						placeholder="••••••••" 
-						{...attrs} 
-						bind:value={$formData.password} 
-					/>
-				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
-
 			<Form.Button size="sm" class="w-full" disabled={isFormLoading}>
 				{#if isFormLoading}
 					<Loader class="mr-2 size-4 animate-spin" />
 				{/if}
-				{$formData.isRegister ? 'Sign Up' : 'Sign In'}
-			</Form.Button>
+				Sign Up with Email</Form.Button
+			>
 		</form>
-
 		<!-- Separator -->
 		<div class="relative">
 			<div class="absolute inset-0 flex items-center">
 				<span class="w-full border-t" />
 			</div>
 			<div class="relative flex justify-center text-xs uppercase">
-				<span class="bg-background px-2 text-muted-foreground">Or continue with</span>
+				<span class="bg-background px-2 text-muted-foreground"> Or continue with </span>
 			</div>
 		</div>
-
 		<Button on:click={githubSignIn} variant="outline" disabled={loading}>
 			{#if loading}
 				<Loader class="mr-2 size-4 animate-spin" />
 			{:else}
 				<img src={GitHubSvg} alt="github" class="mr-2 size-4" />
 			{/if}
-			Github
-		</Button>
+			Github</Button
+		>
+
+		<p class="px-8 text-center text-sm text-muted-foreground">
+			<a href="/signin" class="hover:text-brand underline underline-offset-4">
+				Already have an account? Sign In
+			</a>
+		</p>
 	</div>
 </div>

@@ -1,11 +1,14 @@
-<script>
+<script lang="ts">
 	import { seo } from '$lib';
 	import ClientSection from '$lib/components/landing/ClientSection.svelte';
 	import CtaSection from '$lib/components/landing/CtaSection.svelte';
 	import HeroSection from '$lib/components/landing/HeroSection.svelte';
 	import PricingSection from '$lib/components/landing/PricingSection.svelte';
 	import SphereMask from '$lib/components/magic/SphereMask/SphereMask.svelte';
-import { session } from '$lib/stores/session.store';
+	export let data;
+
+	const { user } = data;
+
 </script>
 
 <svelte:head>
@@ -25,17 +28,15 @@ import { session } from '$lib/stores/session.store';
 	<meta name="twitter:image" content={seo.image} />
 	<meta name="twitter:site" content="@Sikandar_Bhide" />
 </svelte:head>
-
-
+{#if user}
+  <h2>Bienvenue, {user.name} !</h2>
+  <p>Email : {user.email}</p>
+  <pre>{JSON.stringify(user, null, 2)}</pre>
+{:else}
+  <p>Vous n'êtes pas connecté.</p>
+{/if}
 <HeroSection />
 <ClientSection />
 <SphereMask />
 <PricingSection />
 <CtaSection />
-{#if $session.loading}
-    <div>Loading session...</div>
-{:else if $session.user}
-    <div>Welcome {$session.user.name}!</div>
-{:else}
-    <div>Not authenticated</div>
-{/if}

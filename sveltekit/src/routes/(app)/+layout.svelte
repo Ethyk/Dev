@@ -1,17 +1,7 @@
 <script>
-	import { page } from '$app/stores';
 	import Footer from '$lib/layout/Footer.svelte';
 	import Header from '$lib/layout/Header.svelte';
-	import { session } from '$lib/stores/session.store';
-
 	
-	let user = $page.data.user; // `user` est accessible via les données de la page
-
-	console.log(user);
-	$: $session = {
-        user: $page.data.user,
-        loading: false
-    };
 </script>
 
 

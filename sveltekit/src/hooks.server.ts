@@ -1,40 +1,36 @@
-// export const handle = async ({ event, resolve }) => {
-//     const response = await resolve(event);
-//     response.headers.set('x-sveltekit', '1');
-//     return response;
-// };
-
-import { API_BASE_URL } from '$env/static/private';
+// src/hooks.server.ts
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
-    // Récupérer les cookies de la requête
-    const cookies = event.request.headers.get('cookie') || '';
-    
+  // On récupère le cookie de session envoyé par le navigateur
+  const sessionCookie = event.cookies.get('laravel_session'); // ou le nom de ton cookie de session
+
+  let user = null;
+
+  // Si le cookie existe, on tente de récupérer l'utilisateur auprès du backend
+  if (sessionCookie) {
     try {
-        // Vérifier la session utilisateur auprès de Laravel
-        const userResponse = await fetch(`${API_BASE_URL}/api/user`, {
-            method: 'GET',
-            headers: {
-                'Cookie': cookies,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest' // Nécessaire pour Sanctum
-
-            },
-            credentials: 'include'
-        });
-
-			console.log("response ",userResponse);
-
-
-        if (userResponse.ok) {
-            const user = await userResponse.json();
-            event.locals.user = user;
-        }
-        console.log("user ",event.locals.user);
-    } catch (error) {
-        console.error('Session check failed:', error);
+      const res = await fetch('http://localhost:8000/api/user', {
+        headers: {
+          // On transmet tous les cookies reçus à Laravel
+          cookie: event.request.headers.get('cookie') || '',
+          accept: 'application/json',
+          origin: 'http://localhost:5173'
+        },
+        credentials: 'include'
+      });
+      if (res.ok) {
+        user = await res.json();
+      }
+    } catch (e) {
+      user = null;
     }
+  }
 
-    return resolve(event);
+  // On stocke l'utilisateur dans event.locals pour qu'il soit accessible partout (load, actions, etc.)
+  event.locals.user = user;
+
+  console.log("user: ",user);
+  // On continue le traitement normal de la requête
+  return resolve(event);
 };
