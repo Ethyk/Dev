@@ -34,7 +34,7 @@ export type RegisterSchema = z.infer<typeof registerSchema>;
 
 
 
-}
+
 export const postSchema = z.object({
   title: z.string().min(1, { message: 'Le nom est requis' }),
   content: z.string().email({ message: "L'adresse email n'est pas valide" }),

@@ -33,8 +33,8 @@
 					description: 'We have sent you a login link. Be sure to check your spam too.'
 				});
 			} else {
-				toast.error('Something went wrong', {
-					description: 'Your sign in request failed. Please try again.'
+				toast.error('Quelque chose s\'est mal passé', {
+					description: result.data.message
 				});
 			}
 		}
