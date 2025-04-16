@@ -27,9 +27,9 @@ import { ApiClient } from '$lib/sdk/api';
 // Fonction pour gérer l'authentification
 const handleAuth: Handle = async ({ event, resolve }) => {
   // Éviter les appels API internes pour ne pas boucler
-  // if (event.url.pathname.startsWith('/api')) {
-  //   return resolve(event);
-  // }
+  if (event.url.pathname.startsWith('/api')) {
+    return resolve(event);
+  }
 
   // Initialiser AuthClient avec les cookies de l'événement
   const auth = new AuthClient(event.cookies);
