@@ -9,7 +9,6 @@
 	import { type SuperValidated, type Infer, superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { Loader } from 'lucide-svelte';
-	// import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 
 	export let data;
@@ -30,7 +29,7 @@
 					description: 'Your sign in request failed. Please try again.'
 				});
 			}
-		}
+		},
 	});
 
 	const { form: formData, enhance } = form;
@@ -45,8 +44,8 @@
 </script>
 
 <svelte:head>
-	<title>Sign In | Svee UI</title>
-	<meta name="description" content="Sign In for Svee UI" />
+	<title>Sign Up | Svee UI</title>
+	<meta name="description" content="Sign Up for Svee UI" />
 </svelte:head>
 
 <div class="container flex h-screen w-screen flex-col items-center justify-center">
@@ -57,8 +56,8 @@
 	<div class="mx-auto flex w-full flex-col justify-center gap-6 sm:w-[350px]">
 		<div class="flex flex-col gap-2 text-center">
 			<!-- {/* <Icons.logo class="mx-auto h-6 w-6" /> */} -->
-			<h1 class="text-2xl font-semibold tracking-tight">Welcome back</h1>
-			<p class="text-sm text-muted-foreground">Login to your account</p>
+			<h1 class="text-2xl font-semibold tracking-tight">Welcome to Svee UI</h1>
+			<p class="text-sm text-muted-foreground">Sign up for an account</p>
 		</div>
 		<!-- Form -->
 		<form method="POST" use:enhance>
@@ -73,7 +72,7 @@
 				{#if isFormLoading}
 					<Loader class="mr-2 size-4 animate-spin" />
 				{/if}
-				Sign In with Email</Form.Button
+				Sign Up with Email</Form.Button
 			>
 		</form>
 		<!-- Separator -->
@@ -93,9 +92,10 @@
 			{/if}
 			Github</Button
 		>
+
 		<p class="px-8 text-center text-sm text-muted-foreground">
-			<a href="/signup" class="hover:text-brand underline underline-offset-4">
-				Don&apos;t have an account? Sign Up
+			<a href="/signin" class="hover:text-brand underline underline-offset-4">
+				Already have an account? Sign In
 			</a>
 		</p>
 	</div>

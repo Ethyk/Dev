@@ -54,8 +54,8 @@
 			<a class="text-md flex items-center" href="/"> Svee UI </a>
 
 			<div class="ml-auto flex h-full items-center">
-				<a class="mr-6 text-sm" href="/signin"> Log in </a>
-				<Button variant="secondary" class="mr-6 text-sm" href="/signup">Sign up</Button>
+				<a class="mr-6 text-sm" href="/auth/signin"> Log in </a>
+				<Button variant="secondary" class="mr-6 text-sm" href="/auth/signup">Sign up</Button>
 			</div>
 			<button class="ml-6 md:hidden" use:toggleOverflowHidden>
 				<span class="sr-only">Toggle menu</span>

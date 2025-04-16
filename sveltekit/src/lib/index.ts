@@ -1,5 +1,7 @@
 // place files you want to import through the `$lib` alias in this folder.
 
+// place files you want to import through the `$lib` alias in this folder.
+
 export let seo = {
 	title: 'Svelte Startup Template',
 	description:
@@ -9,4 +11,3 @@ export let seo = {
 	url: 'https://startup-sve.vercel.app',
 	keywords: 'svelte, sveltekit, tailwindcss, svelte animations, startup, template'
 };
-
