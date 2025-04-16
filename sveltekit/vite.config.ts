@@ -8,8 +8,17 @@ export default defineConfig({
 		  '/api': {
 			target: 'http://localhost:8000',
 			changeOrigin: true,
-			secure: false,
-		  }
+			// secure: false,
+			// rewrite: (path) => path.replace(/^\/api/, '/api'),
+
+
+
+			// configure: (proxy) => {
+			// 	proxy.on('proxyReq', (proxyReq) => {
+			// 	  proxyReq.setHeader('Cookie', `laravel_session=${event.cookies.get('laravel_session')}`);
+			// 	});
+			//   },
+ 		  }
 		}
 	  }
 });
