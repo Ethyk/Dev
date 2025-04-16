@@ -28,7 +28,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // Attacher l'utilisateur à event.locals
   event.locals.user = user;
-  // console.log("user : ",user);
   // Continuer le traitement normal de la requête
   return resolve(event);
 };

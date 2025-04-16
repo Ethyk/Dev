@@ -132,7 +132,7 @@
 				<Form.Control>
 					{#snippet children({ props })}
 					<Form.Label>Password</Form.Label>
-					<Input placeholder="******" {...props} bind:value={$formData.password} />
+					<Input type="password" placeholder="******" {...props} bind:value={$formData.password} />
 					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />

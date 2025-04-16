@@ -17,8 +17,8 @@ export type LoginSchema = z.infer<typeof loginSchema>;
 
 
 export const registerSchema = z.object({
-  email: z.string().email({ message: "L'adresse email n'est pas valide" }),
   name: z.string().min(1, { message: 'Le nom est requis' }),
+  email: z.string().email({ message: "L'adresse email n'est pas valide" }),
   password: z
     .string()
     .min(8, { message: 'Le mot de passe doit contenir au moins 8 caractères' }),
