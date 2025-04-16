@@ -29,7 +29,12 @@
           <!-- Ajoute d'autres infos si besoin -->
         </div>
       </div>
-      <a href="/logout" class="mt-4 text-brand hover:underline">Se déconnecter</a>
+      <!-- <a href="/auth/logout" class="mt-4 text-brand hover:underline">Se déconnecter</a> -->
+      <form method="POST" action="/auth/logout">
+        <button type="submit" class="mt-4 text-brand hover:underline">
+          Se déconnecter
+        </button>
+      </form>
     </div>
   </div>
   
