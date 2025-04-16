@@ -24,10 +24,11 @@ export const actions: Actions = {
     }
 
     const { email, password } = form.data;
-	const auth = new AuthClient('http://localhost:8000', event.cookies);
+	// const auth = new AuthClient('http://localhost:8000', event.cookies);
+	const auth = new AuthClient(event.cookies);
 
 	try {
-		await auth.login(email, password);
+		await auth.login(email, password, event.fetch);
 	  return { form };
 		throw redirect(302, '/dashboard');
 	  } catch (e: any) {
