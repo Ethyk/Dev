@@ -22,12 +22,13 @@ export const handle: Handle = async ({ event, resolve }) => {
       }
     } catch (e) {
       console.error('Erreur lors de la récupération de l’utilisateur :', e);
+      user = null;
     }
   }
 
   // Attacher l'utilisateur à event.locals
   event.locals.user = user;
-  console.log("user : ",user);
+  // console.log("user : ",user);
   // Continuer le traitement normal de la requête
   return resolve(event);
 };
