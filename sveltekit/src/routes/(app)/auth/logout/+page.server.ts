@@ -1,7 +1,5 @@
 import { redirect, error as skError, type RequestHandler } from '@sveltejs/kit';
 
-import { AuthClient } from '$lib/sdk/auth';
-// import { api } from '../../../api';
 import { api } from '$lib/utils/api';
 
 

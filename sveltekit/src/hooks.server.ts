@@ -98,9 +98,3 @@ export const handle: Handle = async ({ event, resolve }) => {
     // --- 5. Retourner la réponse finale au navigateur ---
     return response;
 };
-
-// class SuperFormSafeRedirect extends Error {
-// 	constructor(public location: string, public status: number){
-// 		super('Redirect')
-// 	}
-// }
