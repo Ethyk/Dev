@@ -1,112 +1,106 @@
-// // import type { Handle } from '@sveltejs/kit';
-// // import { AuthClient } from '$lib/sdk/auth';
+import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
+import cookie from 'cookie';
+import { api } from '$lib/utils/api'; // Ajuste le chemin si nécessaire
+import type { User } from '$lib/types';
 
-// // export const handle: Handle = async ({ event, resolve }) => {
-// //   // Éviter les boucles infinies pour les requêtes API internes
-// //   if (event.url.pathname.startsWith('/api')) {
-// //     return resolve(event);
-// //   }
-
-// //   // Initialiser AuthClient avec l'URL de l'API Laravel et les cookies
-// //   const auth = new AuthClient(event.cookies);
-// //   const user = await auth.getUser(event.fetch);
-
-// //   // Attacher l'utilisateur à event.locals
-// //   event.locals.user = user;
-
-// //   // Continuer le traitement de la requête
-// //   return resolve(event);
-// // };
-
-// // src/hooks.server.ts
-// import type { Handle } from '@sveltejs/kit';
-// import { AuthClient, type User } from '$lib/sdk/auth'; // Importer le type User si besoin
-// import { sequence } from '@sveltejs/kit/hooks'; // Si tu as plusieurs hooks
-// import { ApiClient } from '$lib/sdk/api';
-
-// // Fonction pour gérer l'authentification
-// const handleAuth: Handle = async ({ event, resolve }) => {
-//   // Éviter les appels API internes pour ne pas boucler
-//   if (event.url.pathname.startsWith('/api')) {
-//     return resolve(event);
-//   }
-
-//   // Initialiser AuthClient avec les cookies de l'événement
-//   const auth = new AuthClient(event.cookies);
-//   // const apiClient = new ApiClient(event.cookies);
-
-
-//   // Tenter de récupérer l'utilisateur en passant event.fetch
-//   let user: User | null = null;
-//   try {
-//     // console.log('Hooks: Tentative de récupération de l\'utilisateur...');
-//     user = await auth.getUser(event.fetch);
-//     // user = await apiClient.get<User>('/api/user', event.fetch); // Spécifie le type <User> attendu
-
-//     if (user) {
-//         console.log('Hooks: Utilisateur trouvé:', user.id);
-//     } else {
-//         console.log('Hooks: Aucun utilisateur authentifié trouvé.');
-//     }
-//   } catch (error) {
-//      // Ne pas bloquer la requête si la récupération échoue, juste logguer
-//      console.error('Hooks: Erreur lors de la récupération de l\'utilisateur:', error);
-//   }
-
-//   // Attacher l'utilisateur (ou null) à event.locals
-//   event.locals.user = user;
-
-//   // Continuer le traitement de la requête
-//   // Ajouter un filtre pour ajouter l'en-tête `Authorization` si nécessaire
-//   // (Non requis pour Sanctum cookie-based, mais utile si tu mixes avec des tokens API)
-//   // Le resolve peut aussi modifier la réponse, par ex. pour ajouter des headers
-//   return resolve(event);
-// };
-
-// export const handle = sequence(handleAuth /*, autres_hooks_si_tu_en_as */);
-
-
-import { api } from './routes/api';
-import cookie, { parse } from 'cookie';
-import type { Handle } from '@sveltejs/kit';
+// Noms des cookies (lire depuis .env ou définir ici)
+const SESSION_COOKIE_NAME = import.meta.env.VITE_SESSION_COOKIE_NAME || 'laravel_session';
+const XSRF_COOKIE_NAME = import.meta.env.VITE_XSRF_COOKIE_NAME || 'XSRF-TOKEN';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	if (!event.locals.user) {
-		const loggedIn = await api({
-			method: 'get',
-			resource: 'api/logged-in',
-			event,
-		});
-		event.locals.user = (await loggedIn.json()).user
-    // console.log("loggedIn", await loggedIn.json());
+    const requestCookies = cookie.parse(event.request.headers.get('cookie') || '');
+    const sessionCookieValue = requestCookies[SESSION_COOKIE_NAME];
+    const xsrfCookieValue = requestCookies[XSRF_COOKIE_NAME];
+    let cookiesToSetOnResponse: string[] = []; // Pour accumuler les Set-Cookie à renvoyer
+
+    event.locals.user = null; // Initialiser
+
+    // --- 1. Initialisation CSRF ---
+    // Si le cookie XSRF manque DANS LA REQUÊTE DU NAVIGATEUR, on le demande au backend.
+    // C'est typique lors de la toute première visite ou si les cookies ont été effacés.
+    // On le fait sur GET pour éviter de le demander sur chaque POST/PUT etc. où il est déjà censé être là.
+    if (!xsrfCookieValue && event.request.method === 'GET') {
+        console.log(`[HOOKS] Missing ${XSRF_COOKIE_NAME} cookie on GET request. Requesting new CSRF cookie...`);
+        try {
+            // Appel à Laravel pour obtenir les cookies initiaux (session + xsrf)
+            const csrfResponse = await api({
+                method: 'get',
+                resource: 'sanctum/csrf-cookie', // Route Sanctum standard
+                event: event, // Passe l'event pour utiliser event.fetch et sa gestion des cookies
+            });
+
+            // Récupérer les en-têtes Set-Cookie de la réponse de Laravel
+            const setCookieHeader = csrfResponse.headers.get('set-cookie');
+            if (setCookieHeader) {
+                // Split pour gérer plusieurs cookies potentiels dans un seul header
+                const separateCookies = setCookieHeader.split(/,(?=\s*[a-zA-Z0-9_\-]+=)/);
+                cookiesToSetOnResponse.push(...separateCookies); // Ajoute les CHAÎNES BRUTES Set-Cookie
+                console.log(`[HOOKS] Received ${separateCookies.length} Set-Cookie header(s) from /sanctum/csrf-cookie.`);
+            } else {
+                 console.warn('[HOOKS] No Set-Cookie header received from /sanctum/csrf-cookie.');
+            }
+        } catch (error) {
+            console.error('[HOOKS] Error fetching CSRF cookie:', error);
+            // On continue quand même, la prochaine requête protégée échouera si le token manque vraiment.
+        }
+    }
+
+    // --- 2. Vérification de l'utilisateur ---
+    // Si le cookie de session EXISTE dans la requête du navigateur, tentons de récupérer l'utilisateur.
+    if (sessionCookieValue && !event.locals.user) {
+         console.log(`[HOOKS] Found ${SESSION_COOKIE_NAME} cookie. Checking user status...`);
+        try {
+            const userResponse = await api({
+                method: 'get',
+                resource: 'api/user', // Route API protégée par Sanctum
+                event: event,
+            });
+
+            if (userResponse.ok) {
+                // Attention: .json() consomme le body. Ne pas l'appeler deux fois.
+                const userData = await userResponse.json();
+                if (userData) { // Laravel 11 renvoie le user directement, pas { user: ... }
+                    event.locals.user = userData as User;
+                    console.log('[HOOKS] User is logged in:', event.locals.user?.email);
+                } else {
+                     console.log('[HOOKS] API /api/user responded OK but returned no user data.');
+                     // Session peut-être invalide côté backend?
+                }
+            } else if (userResponse.status === 401 || userResponse.status === 419) {
+                console.log(`[HOOKS] User session invalid or expired (API returned ${userResponse.status}). User is logged out.`);
+                // Pas besoin d'action ici, l'accès aux pages protégées échouera.
+            } else {
+                console.error(`[HOOKS] Error checking logged-in status via /api/user: ${userResponse.status} ${userResponse.statusText}`);
+            }
+        } catch (error) {
+            console.error('[HOOKS] Network error fetching user status:', error);
+        }
+    } else if (!sessionCookieValue) {
+         console.log(`[HOOKS] No ${SESSION_COOKIE_NAME} cookie found in request. User is logged out.`);
+    }
+
+    // --- 3. Résolution de la requête par SvelteKit (load, action, rendu) ---
+    // `resolve` peut aussi ajouter ses propres `Set-Cookie` (par ex. via `event.cookies.set` dans une action, même si on évite ici)
+    const response = await resolve(event);
+
+    // --- 4. Ajout des Set-Cookie accumulés à la réponse FINALE ---
+    // On ajoute les Set-Cookie qu'on a récupérés (ex: du /sanctum/csrf-cookie)
+    // à la réponse que SvelteKit s'apprête à envoyer au NAVIGATEUR.
+    // `append` est utilisé pour ne pas écraser d'autres Set-Cookie potentiels.
+	if (cookiesToSetOnResponse.length > 0) {
+
+			cookiesToSetOnResponse.forEach(cookieHeader => {
+				// console.log(`[HOOKS] Appending Set-Cookie to final response: ${cookieHeader.split('=')[0]}=...`); // Log le nom du cookie
+				response.headers.append('set-cookie', cookieHeader);
+			});
 	}
 
-	const sessionName = import.meta.env.VITE_SESSION_NAME
-	const cookies = cookie.parse(event.request.headers.get('cookie') || '')
-	event.locals.session = cookies[sessionName]
-
-  console.log("[session]", event.locals.session);
-
-	const response = await resolve(event)
-	// console.log("IMPORTANT", response);
-
-	if (!event.locals.session) {
-		const sanctum = await api({
-			method: 'get',
-			resource: 'sanctum/csrf-cookie',
-			event,
-		});
-
-		if (sanctum.status === 204) {
-			// set cookie in the client
-			response.headers.set(
-				'set-cookie',
-				sanctum.headers.get('set-cookie') ?? ''
-			)
-		}
-	}
-
-	return response
+    // --- 5. Retourner la réponse finale au navigateur ---
+    return response;
 };
 
-
+// class SuperFormSafeRedirect extends Error {
+// 	constructor(public location: string, public status: number){
+// 		super('Redirect')
+// 	}
+// }

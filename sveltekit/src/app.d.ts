@@ -1,6 +1,8 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 
+import type { User } from "$lib/type";
+
 // Exporter le handle (utiliser sequence si tu as d'autres hooks)
 export const handle = sequence(handleAuth /*, autresHooks */);
 
@@ -15,7 +17,7 @@ declare global {
 			userid: string;
 
 			// laravel sanctum
-			user: any;
+			user: User;
 			session: string;
 		}
 		interface Session {
