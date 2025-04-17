@@ -7,8 +7,20 @@ export const handle = sequence(handleAuth /*, autresHooks */);
 // Typage pour event.locals (dans src/app.d.ts)
 declare global {
 	namespace App {
+		// interface Locals {
+		// 	user: import('$lib/sdk/auth').User | null; // Utiliser le type User importé
+		// }
 		interface Locals {
-			user: import('$lib/sdk/auth').User | null; // Utiliser le type User importé
+			// sveltekit default
+			userid: string;
+
+			// laravel sanctum
+			user: any;
+			session: string;
+		}
+		interface Session {
+			// laravel sanctum
+			user: any;
 		}
 		// interface Error {}
 		// interface Locals {}
