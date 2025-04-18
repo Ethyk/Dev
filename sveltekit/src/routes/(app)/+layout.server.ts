@@ -10,3 +10,4 @@ export const load: LayoutServerLoad = async ({ locals }) => {
         // Tu peux charger d'autres données globales pour le layout ici si nécessaire
     };
 };
+

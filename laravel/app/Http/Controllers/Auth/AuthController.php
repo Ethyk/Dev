@@ -76,4 +76,18 @@ class AuthController extends Controller
             'message' => 'Déconnexion réussie',
         ]);
     }
+
+    /**
+     * status de l'utilisateur
+     */
+    public function loggedIn(Request $request)
+    {
+        
+        // dd($request->user());
+        // printf($request->user());
+        return response()->json([
+            'user' => $request->user(), //->only('id', 'email', 'first_name', 'last_name', 'image'),
+          ]);
+    }
+    
 }
