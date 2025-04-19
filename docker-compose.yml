@@ -1,6 +1,3 @@
-
-
-
 services:
   postgres: 
     image: postgres:latest
@@ -27,8 +24,8 @@ services:
       - "127.0.0.1:6379:6379"
     networks:
       - laravel_network
+
   minio:
-    # profiles: [app]
     image: 'minio/minio:latest'
     security_opt:
       - no-new-privileges:true
@@ -41,6 +38,24 @@ services:
       - laravel_network
     command: 'minio server /data/minio --console-address ":8900"'
     restart: always
+
+  # traefik:
+  #   image: traefik:v3.3
+  #   container_name: traefik
+  #   command:
+  #     - --api.insecure=true
+  #     - --entryPoints.web.address=:80
+  #     - --providers.file.directory=/etc/traefik/dynamic_conf
+  #     - --providers.file.watch=true
+  #   ports:
+  #     - "80:80"
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./traefik/dynamic_conf:/etc/traefik/dynamic_conf
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   networks:
+  #     - laravel_network
 
 volumes:
   postgres_data:

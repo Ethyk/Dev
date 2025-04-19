@@ -6,12 +6,6 @@ export const BASE_API = import.meta.env.VITE_BASE_API || 'http://localhost:8000'
 export const XSRF_COOKIE_NAME = import.meta.env.VITE_XSRF_COOKIE_NAME || 'XSRF-TOKEN';
 export const SESSION_COOKIE_NAME = import.meta.env.VITE_SESSION_COOKIE_NAME || 'laravel_session';
 
-export interface Cookie {
-  name: string;
-  value: string;
-  [key: string]: any;
-}
-
 export interface ApiOptions {
   method: 'get' | 'post' | 'put' | 'patch' | 'delete';
   resource: string;
@@ -22,12 +16,7 @@ export interface ApiOptions {
 
 export interface ApiResponse {
   response: Response;
-  cookies?: Cookie[];
-}
-
-export interface ApiError {
-  status: number;
-  message: string;
+  cookies?: Array<{ name: string; value: string; [key: string]: any }>;
 }
 
 export class ApiClient {
@@ -41,6 +30,7 @@ export class ApiClient {
       headers['content-type'] = 'application/json';
     }
 
+    // Ajouter X-XSRF-TOKEN pour les requêtes non-GET si disponible
     const needsCsrf = ['post', 'put', 'patch', 'delete'].includes(method.toLowerCase());
     if (needsCsrf && event.locals.xsrfToken) {
       headers['X-XSRF-TOKEN'] = decodeURIComponent(event.locals.xsrfToken);
@@ -56,11 +46,12 @@ export class ApiClient {
       method: method.toUpperCase(),
       headers,
       body: headers['content-type'] === 'application/json' ? JSON.stringify(data) : data,
-      credentials: 'include',
+      credentials: 'include', // Inclut les cookies en CSR
     };
 
     const response = await event.fetch(url, fetchOptions);
 
+    // Extraire les cookies
     const setCookieHeader = response.headers.get('set-cookie') || '';
     const cookies = setCookieParser.parse(setCookieParser.splitCookiesString(setCookieHeader));
 
@@ -78,7 +69,7 @@ export class ApiClient {
     return { response, cookies };
   }
 
-  async fetchCsrfToken(event: RequestEvent): Promise<{ cookies?: Cookie[] }> {
+  async fetchCsrfToken(event: RequestEvent): Promise<{ cookies?: Array<{ name: string; value: string; [key: string]: any }> }> {
     console.log('[ApiClient] Fetching CSRF token');
     const { response, cookies } = await this.request({
       method: 'get',
@@ -88,9 +79,10 @@ export class ApiClient {
 
     if (!response.ok) {
       console.error('[ApiClient] Failed to fetch CSRF token:', response.status);
-      throw { status: response.status, message: 'Failed to fetch CSRF token' } as ApiError;
+      throw new Error('Failed to fetch CSRF token');
     }
 
+    // Stocker XSRF-TOKEN pour les requêtes POST en SSR
     const xsrfCookie = cookies?.find((c) => c.name === XSRF_COOKIE_NAME);
     if (xsrfCookie) {
       event.locals.xsrfToken = xsrfCookie.value;

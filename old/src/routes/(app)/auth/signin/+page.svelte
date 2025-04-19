@@ -7,24 +7,15 @@
 	import { toast } from 'svelte-sonner';
 	import { loginSchema, type LoginSchema } from '$lib/schema/schema';
 	import { Loader } from 'lucide-svelte';
-	import { goto } from '$app/navigation';
   
 	let isFormLoading = $state(false);
-	let { data }: { data: { form: SuperValidated<LoginSchema> } } = $props();
+	let { data }: { data: { form: SuperValidated<Infer<LoginSchema>> } } =
+		$props();
   
 	const form = superForm(data.form, {
 	  validators: zodClient(loginSchema),
 	  onSubmit: () => {
 		isFormLoading = true;
-	  },
-	  onResult: ({ result }) => {
-		isFormLoading = false;
-		if (result.type === 'success' && result.data?.success) {
-		  toast.success('Connexion réussie !');
-		  goto('/dashboard', { invalidateAll: true });
-		} else if (result.type === 'failure') {
-		  toast.error('Erreur de connexion', { description: result.data?.message || 'Veuillez vérifier vos informations' });
-		}
 	  },
 	  onUpdated: ({ form }) => {
 		isFormLoading = false;
@@ -51,10 +42,10 @@
   
 	  <form method="POST" use:enhance>
 		<Form.Field {form} name="email">
-		  <Form.Control>
+		  <Form.Control >
 			{#snippet children({ props })}
-			  <Form.Label>Email</Form.Label>
-			  <Input {...props} bind:value={$formData.email} />
+				<Form.Label>Email</Form.Label>
+				<Input {...props} bind:value={$formData.email} />
 			{/snippet}
 		  </Form.Control>
 		  <Form.FieldErrors />
@@ -63,9 +54,10 @@
 		<Form.Field {form} name="password">
 		  <Form.Control>
 			{#snippet children({ props })}
-			  <Form.Label>Mot de passe</Form.Label>
-			  <Input {...props} type="password" bind:value={$formData.password} />
+				<Form.Label>Mot de passe</Form.Label>
+				<Input {...props} type="password" bind:value={$formData.password} />
 			{/snippet}
+
 		  </Form.Control>
 		  <Form.FieldErrors />
 		</Form.Field>

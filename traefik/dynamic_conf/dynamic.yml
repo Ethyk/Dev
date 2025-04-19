@@ -1,0 +1,58 @@
+http:
+  routers:
+    frontend:
+      rule: "Host(`frontend.local`)"
+      entryPoints:
+        - web
+      service: frontend-service
+
+    api:
+      rule: "Host(`api.local`)"
+      entryPoints:
+        - web
+      service: api-service
+
+  services:
+    frontend-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:5173"
+
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8000"
+# http:
+#   routers:
+#     frontend:
+#       rule: "Host(`frontend.local`) && !PathPrefix(`/api`) && !PathPrefix(`/sanctum`) && !PathPrefix(`/login`) && !PathPrefix(`/logout`)"
+#       entryPoints:
+#         - web
+#       service: frontend-service
+      
+
+#     api:
+#       rule: "Host(`api.local`) || (Host(`frontend.local`) && (PathPrefix(`/api`) || PathPrefix(`/sanctum`) || Path(`/login`) || Path(`/logout`)))"
+#       entryPoints:
+#         - web
+#       service: api-service
+#       middlewares:
+#         - strip-prefix
+
+#   services:
+#     frontend-service:
+#       loadBalancer:
+#         servers:
+#           - url: "http://172.17.0.1:5173" # SvelteKit
+
+#     api-service:
+#       loadBalancer:
+#         servers:
+#           - url: "http://172.17.0.1:8000" # Laravel
+
+#   middlewares:
+#     strip-prefix:
+#       stripPrefix:
+#         prefixes:
+#           - "/api"
+#           - "/sanctum"
