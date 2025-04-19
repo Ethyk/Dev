@@ -20,7 +20,7 @@ declare global {
 			user: User | null;
 			session: Session | null;
 			xsrf: XsrfToken| null;
-
+			apiResponseCookies: string[];
 			// session: string;
 		}
 		// interface Session {

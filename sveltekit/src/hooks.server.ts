@@ -1,53 +1,73 @@
+// src/hooks.server.ts
 import type { Handle, HandleFetch } from '@sveltejs/kit';
-import { AuthClient, type User } from '$lib/api/auth';
-import { setCookies } from '$lib/utils/cookies';
+import { sequence } from '@sveltejs/kit/hooks';
+import { parse } from 'set-cookie-parser';
+import { dev } from '$app/environment';
 
-export const handle: Handle = async ({ event, resolve }) => {
-  console.log('[Hooks] Processing request for URL:', event.url.pathname);
-  event.locals.user = null;
+import { PUBLIC_API_BASE_URL } from '$env/static/public';
+import { getCookieValue, reconstructCookieString } from '$lib/server/utils';
+import type { User } from '$lib/types';
 
-  if (
-    event.url.pathname.startsWith('/api') ||
-    event.url.pathname.startsWith('/sanctum') ||
-    event.url.pathname === '/login' ||
-    event.url.pathname === '/logout'
-  ) {
-    console.log('[Hooks] Skipping user fetch for API route:', event.url.pathname);
-    return await resolve(event);
-  }
+/** Handle principal */
+const handleInitialize: Handle = async ({ event, resolve }) => {
+    const { request, url, locals } = event;
+    locals.apiResponseCookies = [];
+    locals.user = null;
 
-  const auth = new AuthClient();
-  try {
-    const { response, cookies } = await auth.getUser(event);
-    event.locals.user = response.ok ? await response.json() : null;
+    if (dev) console.log(`[Init - ${request.method} ${url.pathname}] Req Cookies: ${request.headers.get('cookie')?.substring(0, 50) || '<None>'}`);
 
-    if (cookies && (!event.locals.user || !event.cookies.get('laravel_session'))) {
-      setCookies(cookies, event.cookies);
-    } else {
-      console.log('[Hooks] Skipping cookie set: valid session or no cookies');
+    const response = await resolve(event);
+
+    if (locals.apiResponseCookies.length > 0) {
+        const uniqueCookies = [...new Set(locals.apiResponseCookies)];
+        if (dev) console.log(`[Init - ${request.method} ${url.pathname}] Appending ${uniqueCookies.length} Set-Cookie(s)`);
+        uniqueCookies.forEach(cookieString => {
+            try { response.headers.append('Set-Cookie', cookieString); } catch (e: any) { /* Gérer erreur */ }
+        });
+        // Réinitialise pour éviter fuite mémoire si l'objet event est réutilisé (improbable mais propre)
+        // locals.apiResponseCookies = [];
     }
-
-    console.log('[Hooks] User fetched:', event.locals.user ? event.locals.user.email : 'null');
-  } catch (error) {
-    console.error('[Hooks] Failed to fetch user:', error);
-  }
-
-  return await resolve(event);
+    return response;
 };
 
-export const handleFetch: HandleFetch = async ({ request, fetch, event }) => {
-  console.log('[HandleFetch] Processing fetch for:', request.url);
+/** HandleFetch pour l'API */
+export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
+    if (request.url.startsWith(PUBLIC_API_BASE_URL)) {
+        const logPrefix = `[Fetch -> ${request.method} ${request.url.split('/').pop()}]`;
+        const clonedRequest = new Request(request.url, request);
+        const browserCookies = event.request.headers.get('cookie');
 
-  const cookie = event.request.headers.get('cookie');
-  if (cookie && request.url.includes('localhost:8000')) {
-    request.headers.set('cookie', cookie);
-    console.log('[HandleFetch] Added client cookies:', cookie);
-  } else {
-    console.log('[HandleFetch] No client cookies to add for:', request.url);
-  }
+        if (browserCookies) clonedRequest.headers.set('cookie', browserCookies);
+        const xsrfToken = getCookieValue(event.request, 'XSRF-TOKEN');
+        if (xsrfToken) clonedRequest.headers.set('X-XSRF-TOKEN', xsrfToken);
+        clonedRequest.headers.set('Accept', 'application/json');
+        clonedRequest.headers.set('Referer', event.url.href);
 
-  const response = await fetch(request);
-  console.log('[HandleFetch] Response cookies:', response.headers.get('set-cookie') || 'none');
+        if (dev) console.log(`${logPrefix} Sending Req`);
 
-  return response;
+        let apiResponse: Response;
+        try {
+            apiResponse = await fetch(clonedRequest);
+            if (dev) console.log(`${logPrefix} API Status: ${apiResponse.status}`);
+        } catch (error) {
+            console.error(`${logPrefix} Fetch Error:`, error);
+            return new Response(JSON.stringify({ message: 'API fetch error' }), { status: 503 });
+        }
+
+        try {
+            const parsedCookieObjects = parse(apiResponse);
+            if (parsedCookieObjects?.length > 0) {
+                const cookieStrings = parsedCookieObjects.map(reconstructCookieString).filter((cs): cs is string => cs !== null);
+                if (cookieStrings.length > 0) {
+                    event.locals.apiResponseCookies = cookieStrings;
+                    if (dev) console.log(`${logPrefix} Stored ${cookieStrings.length} Set-Cookie strings`);
+                }
+            }
+        } catch (parseError) { console.error(`${logPrefix} Cookie Parse Error:`, parseError); }
+
+        return apiResponse;
+    }
+    return fetch(request);
 };
+
+export const handle: Handle = sequence(handleInitialize);
